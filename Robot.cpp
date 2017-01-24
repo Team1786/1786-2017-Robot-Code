@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
-
+#include <CANTalon.h>
 #include <WPILib.h>
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
@@ -9,11 +9,40 @@
 #include <SmartDashboard/SmartDashboard.h>
 
 class Robot: public frc::IterativeRobot {
+	//Create objects for a driver's joystick and a second operator's joystick
+	Joystick *DriverStick;
+	Joystick *OperatorStick;
+	//Create objects for the four Talons running on a CAN Bus that we need for the drivetrain
+	CANTalon *lf;
+	CANTalon *lb;
+	CANTalon *rf;
+	CANTalon *rb;
+
+	//Create object to control those CANTalon objects and make our mecanum lives easier
+	RobotDrive *MecanumDrive;
 public:
 	void RobotInit() {
 		chooser.AddDefault(autoNameDefault, autoNameDefault);
 		chooser.AddObject(autoNameCustom, autoNameCustom);
 		frc::SmartDashboard::PutData("Auto Modes", &chooser);
+
+		//Create instances of the previously defined joysticks with their ID's
+		DriverStick = new Joystick(0);
+		OperatorStick = new Joystick(1);
+
+		//Create instances of the four CANTalons we defined, with their ID's as constructor
+		//params
+		// lf = left front, lb = left back, and so on
+		lf = new CANTalon(1);
+		lb = new CANTalon(1);
+		rf = new CANTalon(1);
+		rb = new CANTalon(1);
+
+		//Create instance of Robotdrive we defined earlier, uses the 4 Cantalons as params
+		MecanumDrive = new RobotDrive(lf, lb, rf, rb);
+
+		lf->SetInverted(true);
+		lb->SetInverted(true);
 	}
 
 	/*
@@ -52,7 +81,10 @@ public:
 	}
 
 	void TeleopPeriodic() {
-
+		//Function in loop to get input from
+		MecanumDrive->MecanumDrive_Cartesian(DriverStick->GetX(),
+											 DriverStick->GetY(),
+											 DriverStick->GetZ());
 	}
 
 	void TestPeriodic() {
