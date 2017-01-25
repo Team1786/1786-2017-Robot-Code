@@ -40,7 +40,8 @@ public:
 
 		//Create instance of Robotdrive we defined earlier, uses the 4 Cantalons as params
 		MecanumDrive = new RobotDrive(lf, lb, rf, rb);
-
+		MecanumDrive->SetSafetyEnabled(true);
+		MecanumDrive->SetExpiration(0.1);
 		lf->SetInverted(true);
 		lb->SetInverted(true);
 	}
