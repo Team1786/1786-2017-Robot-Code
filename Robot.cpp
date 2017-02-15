@@ -19,6 +19,8 @@ class Robot: public frc::IterativeRobot {
 	CANTalon *rf;
 	CANTalon *rb;
 
+	CANTalon *ShooterMotor;
+
 	//Create object to control those CANTalon objects and make our mecanum lives easier
 	RobotDrive *MecanumDrive;
 public:
@@ -38,6 +40,8 @@ public:
 		lb = new CANTalon(4);
 		rf = new CANTalon(2);
 		rb = new CANTalon(5);
+
+		ShooterMotor = new CANTalon(6);
 
 		//Create instance of Robotdrive we defined earlier, uses the 4 Cantalons as params
 		MecanumDrive = new RobotDrive(lf, lb, rf, rb);
@@ -84,12 +88,10 @@ public:
 
 	void TeleopPeriodic() {
 		//Range from 0 to 1
-		int DriveThrottle = ((DriverStick->GetThrottle()+1)/2);
-
-
 		MecanumDrive->MecanumDrive_Cartesian(DriverStick->GetX(),
 											 DriverStick->GetY(),
 											 DriverStick->GetZ());
+		ShooterMotor->Set(OperatorStick->GetThrottle());
 	}
 
 	void TestPeriodic() {
