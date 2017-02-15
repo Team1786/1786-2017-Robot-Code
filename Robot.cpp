@@ -13,22 +13,16 @@ class Robot: public frc::IterativeRobot {
 	//Create objects for a driver's joystick and a second operator's joystick
 	Joystick *DriverStick;
 	Joystick *OperatorStick;
-	//Create objects for the four Talons running on a CAN Bus that we need for the drivetrain
-	CANTalon *lf;
-	CANTalon *lb;
-	CANTalon *rf;
-	CANTalon *rb;
 
-	CANTalon *ShooterMotor;
-
-	//Create object to control those CANTalon objects and make our mecanum lives easier
+	//Cantalons
+	CANTalon *lf, *lb, *rf, *rb, *ShooterMotor, *IntakeMotor;
 	RobotDrive *MecanumDrive;
+
+	double OperatorThrottle, OperatorX, OperatorY, OperatorZ;
+	double DriverThrottle, DriverX, DriverY, DriverZ;
+
 public:
 	void RobotInit() {
-		chooser.AddDefault(autoNameDefault, autoNameDefault);
-		chooser.AddObject(autoNameCustom, autoNameCustom);
-		frc::SmartDashboard::PutData("Auto Modes", &chooser);
-
 		//Create instances of the previously defined joysticks with their ID's
 		DriverStick = new Joystick(0);
 		OperatorStick = new Joystick(1);
@@ -42,7 +36,11 @@ public:
 		rb = new CANTalon(5);
 
 		ShooterMotor = new CANTalon(6);
-
+		IntakeMotor = new CANTalon(7);
+		ShooterMotor->SetSafetyEnabled(true);
+		ShooterMotor->SetExpiration(0.1);
+		IntakeMotor->SetSafetyEnabled(true);
+		IntakeMotor->SetExpiration(0.1);
 		//Create instance of Robotdrive we defined earlier, uses the 4 Cantalons as params
 		MecanumDrive = new RobotDrive(lf, lb, rf, rb);
 		MecanumDrive->SetSafetyEnabled(true);
@@ -87,11 +85,37 @@ public:
 	}
 
 	void TeleopPeriodic() {
+
+		//Get input from Operator joystick and put them onto the dashboard
+		OperatorX = OperatorStick->GetX();
+		OperatorY = OperatorStick->GetY();
+		OperatorZ = OperatorStick->GetZ();
+		OperatorThrottle = OperatorStick->GetThrottle();
+		SmartDashboard::PutNumber("Operator X", OperatorX);
+		SmartDashboard::PutNumber("Operator Y", OperatorY);
+		SmartDashboard::PutNumber("Operator Z", OperatorZ);
+		SmartDashboard::PutNumber("Operator Throttle", OperatorThrottle);
+
+		//Get input from Driver joystick and put them onto the dashboard
+		DriverX = DriverStick->GetX();
+		DriverY = DriverStick->GetY();
+		DriverZ = DriverStick->GetZ();
+		DriverThrottle = DriverStick->GetThrottle();
+		SmartDashboard::PutNumber("Driver X", DriverX);
+		SmartDashboard::PutNumber("Driver Y", DriverY);
+		SmartDashboard::PutNumber("Driver Z", DriverZ);
+		SmartDashboard::PutNumber("Driver Throttle", DriverThrottle);
+
 		//Range from 0 to 1
-		MecanumDrive->MecanumDrive_Cartesian(DriverStick->GetX(),
-											 DriverStick->GetY(),
-											 DriverStick->GetZ());
-		ShooterMotor->Set(OperatorStick->GetThrottle());
+		MecanumDrive->MecanumDrive_Cartesian(DriverX,
+											 DriverY,
+											 DriverZ);
+
+		//quick and dirty shooter testing
+		ShooterMotor->Set(OperatorThrottle);
+
+		//quick and dirty shooter testing
+		ShooterMotor->Set(DriverThrottle);
 	}
 
 	void TestPeriodic() {
