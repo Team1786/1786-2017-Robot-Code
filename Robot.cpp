@@ -38,7 +38,7 @@ class Robot: public frc::IterativeRobot {
 	double OperatorThrottle;
 	double DriverThrottle;
 	double shooterSpeed = 0.78;
-	double kp = 0.2;
+	double kP = 0.2;
 	double idealV = 13.6;
 
 	bool intakeSwitch;
@@ -187,7 +187,7 @@ public:
 		//shooter control
 		if(shootSwitch) {
 			//pdp voltage adjusts for Voltage drops
-			ShooterMotor->Set(shooterSpeed * (idealV/pdp->GetVoltage()));
+			ShooterMotor->Set(shooterSpeed * (kP * (idealV/pdp->GetVoltage()));
 		} else {
 			ShooterMotor->Set(0);
 		}
