@@ -8,19 +8,40 @@
 #include <SmartDashboard/SendableChooser.h>
 #include <SmartDashboard/SmartDashboard.h>
 #include <cmath>
+#include <AHRS.h>
+
+//on driver side
+#define YAWRESET 12
+#define DRIVESWITCH 11
+
+//on operator side
+#define INTAKESWITCH 12
+#define INTAKEREV 11
+#define SHOOTSWITCH 7
+#define SHOOTREV 6
 
 class Robot: public frc::IterativeRobot {
 	//Create objects for a driver's joystick and a second operator's joystick
 	Joystick *DriverStick;
 	Joystick *OperatorStick;
 
-	//Cantalons
-	CANTalon *lf, *lb, *rf, *rb, *ShooterMotor, *IntakeMotor;
+	//CANtalons
+	CANTalon *lf, *lb, *rf, *rb, *ShooterMotor, *IntakeMotor, *ClimberMotor;
 	RobotDrive *MecanumDrive;
 
-	double OperatorThrottle, OperatorX, OperatorY, OperatorZ;
-	double DriverThrottle, DriverX, DriverY, DriverZ;
+	//IMU Sensor
+	AHRS *ahrs;
 
+	double OperatorThrottle;
+	double DriverThrottle;
+
+	bool intakeSwitch;
+	bool shootSwitch;
+	bool intakeRev;
+	bool shootRev;
+	bool driveSwitch;
+	int intakeSign = 1;
+	int shootSign = 1;
 public:
 	void RobotInit() {
 		//Create instances of the previously defined joysticks with their ID's
@@ -30,98 +51,112 @@ public:
 		//Create instances of the four CANTalons we defined, with their ID's as constructor
 		//params
 		// lf = left front, lb = left back, and so on
-		lf = new CANTalon(3);
-		lb = new CANTalon(4);
+		lf = new CANTalon(5);
+		lb = new CANTalon(3);
 		rf = new CANTalon(2);
-		rb = new CANTalon(5);
+		rb = new CANTalon(4);
+		lf->SetInverted(true);
+		lb->SetInverted(true);
 
+		//Game Object manipulators
 		ShooterMotor = new CANTalon(6);
 		IntakeMotor = new CANTalon(7);
+		ClimberMotor = new CANTalon(8);
+
+		//motor safety for the shooter
 		ShooterMotor->SetSafetyEnabled(true);
 		ShooterMotor->SetExpiration(0.1);
+
+		//motor safety for the Intake
 		IntakeMotor->SetSafetyEnabled(true);
 		IntakeMotor->SetExpiration(0.1);
+
+		//motor safety for the Climber
+		ClimberMotor->SetSafetyEnabled(true);
+		ClimberMotor->SetExpiration(0.1);
+
 		//Create instance of Robotdrive we defined earlier, uses the 4 Cantalons as params
 		MecanumDrive = new RobotDrive(lf, lb, rf, rb);
 		MecanumDrive->SetSafetyEnabled(true);
 		MecanumDrive->SetExpiration(0.1);
-		lf->SetInverted(true);
-		lb->SetInverted(true);
+
+		ahrs = new AHRS(SPI::Port::kMXP);
 	}
 
-	/*
-	 * This autonomous (along with the chooser code above) shows how to select
-	 * between different autonomous modes using the dashboard. The sendable
-	 * chooser code works with the Java SmartDashboard. If you prefer the
-	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
-	 * GetString line to get the auto name from the text box below the Gyro.
-	 *
-	 * You can add additional auto modes by adding additional comparisons to the
-	 * if-else structure below with additional strings. If using the
-	 * SendableChooser make sure to add them to the chooser code above as well.
-	 */
 	void AutonomousInit() override {
-		autoSelected = chooser.GetSelected();
-		// std::string autoSelected = SmartDashboard::GetString("Auto Selector", autoNameDefault);
-		std::cout << "Auto selected: " << autoSelected << std::endl;
-
-		if (autoSelected == autoNameCustom) {
-			// Custom Auto goes here
-		} else {
-			// Default Auto goes here
-		}
 	}
 
 	void AutonomousPeriodic() {
-		if (autoSelected == autoNameCustom) {
-			// Custom Auto goes here
-		} else {
-			// Default Auto goes here
-		}
 	}
-
 	void TeleopInit() {
 
 	}
-
 	void TeleopPeriodic() {
 
-		//Get input from Operator joystick and put them onto the dashboard
-		OperatorX = OperatorStick->GetX();
-		OperatorY = OperatorStick->GetY();
-		OperatorZ = OperatorStick->GetZ();
-		OperatorThrottle = OperatorStick->GetThrottle();
-		SmartDashboard::PutNumber("Operator X", OperatorX);
-		SmartDashboard::PutNumber("Operator Y", OperatorY);
-		SmartDashboard::PutNumber("Operator Z", OperatorZ);
-		SmartDashboard::PutNumber("Operator Throttle", OperatorThrottle);
+		//Get input from Driver joystick. Changes range from -1->0, which makes sense physically
+		DriverThrottle = ((DriverStick->GetThrottle()-1)/-2);
+		OperatorThrottle = ((OperatorStick->GetThrottle()-1)/-2);
 
-		//Get input from Driver joystick and put them onto the dashboard
-		DriverX = DriverStick->GetX();
-		DriverY = DriverStick->GetY();
-		DriverZ = DriverStick->GetZ();
-		DriverThrottle = DriverStick->GetThrottle();
-		SmartDashboard::PutNumber("Driver X", DriverX);
-		SmartDashboard::PutNumber("Driver Y", DriverY);
-		SmartDashboard::PutNumber("Driver Z", DriverZ);
-		SmartDashboard::PutNumber("Driver Throttle", DriverThrottle);
+		//get intake button
+		if(OperatorStick->GetRawButton(INTAKESWITCH)) {
+			intakeSwitch = true;
+		} else if(!OperatorStick->GetRawButton(INTAKESWITCH)) {
+			intakeSwitch = false;
+		}
+		//get intake rev button
+		if(OperatorStick->GetRawButton(INTAKEREV) && !intakeRev) {
+			intakeSign = intakeSign * -1;
+			intakeRev = true;
+		} else if (!OperatorStick->GetRawButton(INTAKEREV)) {
+			intakeRev = false;
+		}
+		// intake control
+		if(intakeSwitch && OperatorThrottle == 0) {
+			IntakeMotor->Set(0.5 * intakeSign);
+		} else {
+			IntakeMotor->Set(OperatorThrottle * intakeSign);
+		}
 
-		//Range from 0 to 1
-		MecanumDrive->MecanumDrive_Cartesian(DriverX,
-											 DriverY,
-											 DriverZ);
+		// get shooter button
+		if(OperatorStick->GetRawButton(SHOOTSWITCH)) {
+			shootSwitch = true;
+		} else if(!OperatorStick->GetRawButton(SHOOTSWITCH)) {
+			shootSwitch = false;
+		}
+		//get shooter rev button
+		if(OperatorStick->GetRawButton(SHOOTREV) && !shootRev) {
+			shootSign *= -1;
+			shootRev = true;
+		} else if (!OperatorStick->GetRawButton(SHOOTREV)) {
+			shootRev = false;
+		}
+		// climber control
+		ClimberMotor->Set(-OperatorStick->GetY());
 
-		//quick and dirty shooter testing
-		ShooterMotor->Set(OperatorThrottle);
+		//reset yaw for field oriented driving
+		bool reset_yaw_button_pressed = DriverStick->GetRawButton(YAWRESET);
+		if ( reset_yaw_button_pressed ) {
+			ahrs->ZeroYaw();
+		}
 
-		//quick and dirty shooter testing
-		ShooterMotor->Set(DriverThrottle);
+		//switch between field oriented and 'car' style mecanum driving
+		if(DriverStick->GetRawButton(DRIVESWITCH) && !driveSwitch) {
+
+			driveSwitch = true;
+		} else if(DriverStick->GetRawButton(DRIVESWITCH) && driveSwitch) {
+			driveSwitch = false;
+		}
+		if (driveSwitch) {
+			MecanumDrive->MecanumDrive_Cartesian(DriverThrottle * -DriverStick->GetX(),
+												 DriverThrottle * -DriverStick->GetY(),
+												 DriverThrottle * DriverStick->GetZ());
+		} else if (!driveSwitch) {
+			MecanumDrive->MecanumDrive_Cartesian(DriverThrottle * -DriverStick->GetX(),
+												 DriverThrottle * -DriverStick->GetY(),
+												 DriverThrottle * DriverStick->GetZ(),
+												 ahrs->GetAngle());
+		}
 	}
-
-	void TestPeriodic() {
-		lw->Run();
-	}
-
 private:
 	frc::LiveWindow* lw = LiveWindow::GetInstance();
 	frc::SendableChooser<std::string> chooser;
