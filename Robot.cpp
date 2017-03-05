@@ -32,8 +32,11 @@ class Robot: public frc::IterativeRobot {
 	//IMU Sensor
 	AHRS *ahrs;
 
+	PowerDistributionPanel *pdp;
+
 	double OperatorThrottle;
 	double DriverThrottle;
+	double shooterSpeed;
 
 	bool intakeSwitch;
 	bool shootSwitch;
@@ -42,6 +45,7 @@ class Robot: public frc::IterativeRobot {
 	bool driveSwitch;
 	int intakeSign = 1;
 	int shootSign = 1;
+
 public:
 	void RobotInit() {
 		//Create instances of the previously defined joysticks with their ID's
@@ -116,20 +120,6 @@ public:
 		} else {
 			IntakeMotor->Set(OperatorThrottle * intakeSign);
 		}
-
-		// get shooter button
-		if(OperatorStick->GetRawButton(SHOOTSWITCH)) {
-			shootSwitch = true;
-		} else if(!OperatorStick->GetRawButton(SHOOTSWITCH)) {
-			shootSwitch = false;
-		}
-		//get shooter rev button
-		if(OperatorStick->GetRawButton(SHOOTREV) && !shootRev) {
-			shootSign *= -1;
-			shootRev = true;
-		} else if (!OperatorStick->GetRawButton(SHOOTREV)) {
-			shootRev = false;
-		}
 		// climber control
 		ClimberMotor->Set(-OperatorStick->GetY());
 
@@ -137,6 +127,27 @@ public:
 		bool reset_yaw_button_pressed = DriverStick->GetRawButton(YAWRESET);
 		if ( reset_yaw_button_pressed ) {
 			ahrs->ZeroYaw();
+		}
+		// get shooter button
+		if(OperatorStick->GetRawButton(SHOOTSWITCH) && !shootSwitch) {
+			shootSwitch = true;
+		} else if(OperatorStick->GetRawButton(SHOOTSWITCH) && shootSwitch) {
+			shootSwitch = false;
+		}
+
+		//get shooter rev button
+		if(OperatorStick->GetRawButton(SHOOTREV) && !shootRev) {
+			shootSign *= -1;
+			shootRev = true;
+		} else if (!OperatorStick->GetRawButton(SHOOTREV)) {
+			shootRev = false;
+		}
+		//shooter control
+		if(shootSwitch) {
+			//pdp voltage adjusts for Voltage drops
+			ShooterMotor->Set((shooterSpeed * shootSign) * (13.6/pdp->GetVoltage()));
+		} else {
+			ShooterMotor->Set(0);
 		}
 
 		//switch between field oriented and 'car' style mecanum driving
