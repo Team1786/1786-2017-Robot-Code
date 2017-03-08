@@ -1,5 +1,5 @@
-LIBS=wpi
-override CFLAGS +=-l$(LIBS) -std=c++11
+LIBS=wpi CTRLib navx_frc_cpp
+override CFLAGS +=$(addprefix -l,$(LIBS)) -std=c++14
 TEAM=1786
 SSH_OPTIONS= -v
 SSH_SSHPASS=$(shell command -v sshpass >/dev/null 2>&1 && echo -n "sshpass -p ''")
@@ -8,9 +8,9 @@ all: deploy
 
 build: FRCUserProgram
 
-FRCUserProgram: robot.cpp
+FRCUserProgram: Robot.cpp
 	@echo "Building FRCUserProgram"
-	arm-frc-linux-gnueabi-g++ robot.cpp -o FRCUserProgram $(CFLAGS)
+	arm-frc-linux-gnueabi-g++ Robot.cpp -o FRCUserProgram $(CFLAGS)
 
 clean:
 	rm FRCUserProgram
