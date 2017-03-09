@@ -22,26 +22,25 @@
 
 class Robot: public frc::IterativeRobot {
 	//Create objects for a driver's joystick and a second operator's joystick
-	Joystick *DriverStick;
-	Joystick *OperatorStick;
+	Joystick driverStick;
+	Joystick operatorStick;
 
 	//CANtalons
-	CANTalon *lf, *lb, *rf, *rb, *ShooterMotor, *IntakeMotor, *ClimberMotor;
-	RobotDrive *MecanumDrive;
+	CANTalon lf, lb, rf, rb, shooterMotor, intakeMotor, climberMotor;
+	RobotDrive mecanumDrive;
 
 	//IMU Sensor
-	AHRS *ahrs;
+	AHRS ahrs;
 
 	//pdp used to get voltages
 	PowerDistributionPanel *pdp;
 
-	double OperatorThrottle;
-	double DriverThrottle;
+	double operatorThrottle;
+	double driverThrottle;
 	double shooterSpeed = 0.78;
 	double kP = 0.2;
 	double idealV = 13.6;
 
-	bool intakeSwitch;
 	bool shootSwitch;
 	bool intakeRev;
 	bool shootRev;
@@ -50,9 +49,9 @@ class Robot: public frc::IterativeRobot {
 	int shootSign = 1;
 
 public:
-	void RobotInit() {
-		DriverStick = new Joystick(0);
-		OperatorStick = new Joystick(1);
+	Robot():
+		driverStick(0),
+		operatorStick(1),
 
 		/*
 		 * lf = left front
@@ -60,37 +59,39 @@ public:
 		 * rf = right front
 		 * rb = right back
 		 */
-		lf = new CANTalon(5);
-		lb = new CANTalon(3);
-		rf = new CANTalon(2);
-		rb = new CANTalon(4);
-		lf->SetInverted(true);
-		lb->SetInverted(true);
+		lf(5),
+		lb(3),
+		rf(2),
+		rb(4),
+		mecanumDrive(lf, lb, rf, rb),
 
 		//Game Object manipulators
-		ShooterMotor = new CANTalon(6);
-		IntakeMotor = new CANTalon(7);
-		ClimberMotor = new CANTalon(8);
-
-		//motor safety for the shooter
-		ShooterMotor->SetSafetyEnabled(true);
-		ShooterMotor->SetExpiration(0.1);
-
-		//motor safety for the Intake
-		IntakeMotor->SetSafetyEnabled(true);
-		IntakeMotor->SetExpiration(0.1);
-
-		//motor safety for the Climber
-		ClimberMotor->SetSafetyEnabled(true);
-		ClimberMotor->SetExpiration(0.1);
-
-		//motor safety for the drive system, and assign CANTalons
-		MecanumDrive = new RobotDrive(lf, lb, rf, rb);
-		MecanumDrive->SetSafetyEnabled(true);
-		MecanumDrive->SetExpiration(0.1);
+		shooterMotor(6),
+		intakeMotor(7),
+		climberMotor(8),
 
 		//configure the gyroscope for use as a breakout on the roborio.
-		ahrs = new AHRS(SPI::Port::kMXP);
+		ahrs(SPI::Port::kMXP)
+	{
+		//invert drive motors
+		lf.SetInverted(true);
+		lb.SetInverted(true);
+
+		//motor safety for the drive system, and assign CANTalons
+		mecanumDrive.SetSafetyEnabled(true);
+		mecanumDrive.SetExpiration(0.1);
+
+		//motor safety for the shooter
+		shooterMotor.SetSafetyEnabled(true);
+		shooterMotor.SetExpiration(0.1);
+
+		//motor safety for the Intake
+		intakeMotor.SetSafetyEnabled(true);
+		intakeMotor.SetExpiration(0.1);
+
+		//motor safety for the Climber
+		climberMotor.SetSafetyEnabled(true);
+		climberMotor.SetExpiration(0.1);
 	}
 
 	void AutonomousInit() override {
@@ -111,8 +112,8 @@ public:
 		/* Get input from Driver joystick. Changes range from -1->0, which makes sense physically
 		 * Generally, the input on these joysticks is flipped such that we need to reverse it.
 		 */
-		DriverThrottle = ((DriverStick->GetThrottle()-1)/-2);
-		OperatorThrottle = ((OperatorStick->GetThrottle()-1)/-2);
+		driverThrottle = ((1 - driverStick.GetThrottle()) / 2);
+		operatorThrottle = ((1 - operatorStick.GetThrottle()) / 2);
 
 
 		/*
@@ -120,24 +121,18 @@ public:
 		 * the intake is controlled through either a toggling switch button or through a throttle.
 		 * Another button is also bound to reverse the sign, or direction, of the intake motor.
 		 */
-		//get intake button
-		if(OperatorStick->GetRawButton(INTAKESWITCH)) {
-			intakeSwitch = true;
-		} else if(!OperatorStick->GetRawButton(INTAKESWITCH)) {
-			intakeSwitch = false;
-		}
 		//get intake rev button
-		if(OperatorStick->GetRawButton(INTAKEREV) && !intakeRev) {
-			intakeSign = intakeSign * -1;
+		if(operatorStick.GetRawButton(INTAKEREV) && !intakeRev) {
+			intakeSign *= -1;
 			intakeRev = true;
-		} else if (!OperatorStick->GetRawButton(INTAKEREV)) {
+		} else if (!operatorStick.GetRawButton(INTAKEREV)) {
 			intakeRev = false;
 		}
 		// intake control
-		if(intakeSwitch && OperatorThrottle == 0) {
-			IntakeMotor->Set(0.5 * intakeSign);
+		if(operatorStick.GetRawButton(INTAKESWITCH) && operatorThrottle == 0) {
+			intakeMotor.Set(0.5 * intakeSign);
 		} else {
-			IntakeMotor->Set(OperatorThrottle * intakeSign);
+			intakeMotor.Set(operatorThrottle * intakeSign);
 		}
 		/*
 		 * END INTAKE CODE
@@ -149,7 +144,7 @@ public:
 		 * The climber is driven through direct control from Y-axis of the operator's joystick.
 		 */
 		// climber control
-		ClimberMotor->Set(-OperatorStick->GetY());
+		climberMotor.Set(-operatorStick.GetY());
 		/*
 		 * END CLIMBER CODE
 		 */
@@ -171,25 +166,23 @@ public:
 		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
 
 		// get shooter button
-		if(OperatorStick->GetRawButton(SHOOTSWITCH) && !shootSwitch) {
-			shootSwitch = true;
-		} else if(OperatorStick->GetRawButton(SHOOTSWITCH) && shootSwitch) {
-			shootSwitch = false;
+		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
+			shootSwitch = !shootSwitch;
 		}
 
 		//get shooter rev button
-		if(OperatorStick->GetRawButton(SHOOTREV) && !shootRev) {
+		if(operatorStick.GetRawButton(SHOOTREV) && !shootRev) {
 			shootSign *= -1;
 			shootRev = true;
-		} else if (!OperatorStick->GetRawButton(SHOOTREV)) {
+		} else if (!operatorStick.GetRawButton(SHOOTREV)) {
 			shootRev = false;
 		}
 		//shooter control
 		if(shootSwitch) {
 			//pdp voltage adjusts for Voltage drops
-			ShooterMotor->Set(shooterSpeed * (kP * (idealV/pdp->GetVoltage()));
+			shooterMotor.Set(shooterSpeed * (kP * (idealV/pdp->GetVoltage())));
 		} else {
-			ShooterMotor->Set(0);
+			shooterMotor.Set(0);
 		}
 		/*
 		 * END SHOOTER CODE
@@ -202,27 +195,25 @@ public:
 		 * switching between the modes is done through a toggling switch button.
 		 */
 		//reset yaw for field oriented driving
-		bool reset_yaw_button_pressed = DriverStick->GetRawButton(YAWRESET);
-		if ( reset_yaw_button_pressed ) {
-			ahrs->ZeroYaw();
+		if (driverStick.GetRawButton(YAWRESET)) {
+			ahrs.ZeroYaw();
 		}
 
 		//switch between field oriented and 'car' style mecanum driving
-		if(DriverStick->GetRawButton(DRIVESWITCH) && !driveSwitch) {
-
-			driveSwitch = true;
-		} else if(DriverStick->GetRawButton(DRIVESWITCH) && driveSwitch) {
-			driveSwitch = false;
+		if(driverStick.GetRawButton(DRIVESWITCH)) {
+			driveSwitch = !driveSwitch;
 		}
 		if (driveSwitch) {
-			MecanumDrive->MecanumDrive_Cartesian(DriverThrottle * -DriverStick->GetX(),
-												 DriverThrottle * -DriverStick->GetY(),
-												 DriverThrottle * DriverStick->GetZ());
+			mecanumDrive.MecanumDrive_Cartesian(
+				driverThrottle * -driverStick.GetX(),
+				driverThrottle * -driverStick.GetY(),
+				driverThrottle * driverStick.GetZ());
 		} else if (!driveSwitch) {
-			MecanumDrive->MecanumDrive_Cartesian(DriverThrottle * -DriverStick->GetX(),
-												 DriverThrottle * -DriverStick->GetY(),
-												 DriverThrottle * DriverStick->GetZ(),
-												 ahrs->GetAngle());
+			mecanumDrive.MecanumDrive_Cartesian(
+				driverThrottle * -driverStick.GetX(),
+				driverThrottle * -driverStick.GetY(),
+				driverThrottle * driverStick.GetZ(),
+				ahrs.GetAngle());
 		}
 		/*
 		 * END DRIVING CODE
