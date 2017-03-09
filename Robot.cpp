@@ -204,14 +204,16 @@ public:
 			driveSwitch = !driveSwitch;
 		}
 		if (driveSwitch) {
-			mecanumDrive.MecanumDrive_Cartesian(driverThrottle * -driverStick.GetX(),
-												driverThrottle * -driverStick.GetY(),
-												driverThrottle * driverStick.GetZ());
+			mecanumDrive.MecanumDrive_Cartesian(
+				driverThrottle * -driverStick.GetX(),
+				driverThrottle * -driverStick.GetY(),
+				driverThrottle * driverStick.GetZ());
 		} else if (!driveSwitch) {
-			mecanumDrive.MecanumDrive_Cartesian(driverThrottle * -driverStick.GetX(),
-												driverThrottle * -driverStick.GetY(),
-												driverThrottle * driverStick.GetZ(),
-												ahrs.GetAngle());
+			mecanumDrive.MecanumDrive_Cartesian(
+				driverThrottle * -driverStick.GetX(),
+				driverThrottle * -driverStick.GetY(),
+				driverThrottle * driverStick.GetZ(),
+				ahrs.GetAngle());
 		}
 		/*
 		 * END DRIVING CODE
