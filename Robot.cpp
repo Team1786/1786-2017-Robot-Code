@@ -44,7 +44,7 @@ private:
 
 	bool shootSwitch;
 	bool shootRev;
-	double shooterSpeed = 0.78;
+	double shooterSpeed = 0.65;
 	double kP = 0.2;
 	double idealV = 13.6;
 
