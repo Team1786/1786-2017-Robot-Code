@@ -2,18 +2,13 @@
 #include <CANTalon.h>
 #include <WPILib.h>
 
-//on driver side
-#define YAWRESET 12
-#define DRIVESWITCH 11
-
 //on operator side
-#define INTAKESWITCH 12
-#define INTAKEREV 11
-#define SHOOTSWITCH 7
-#define SHOOTREV 6
-#define CLIMBUP 8
-#define IDEALUP 9
-#define IDEALDOWN 10
+#define INTAKESWITCH 2
+#define INTAKEREV 3
+#define SHOOTSWITCH 1
+#define SHOOTREV 4
+#define IDEALUP 12
+#define IDEALDOWN 11
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -92,16 +87,16 @@ public:
 		operatorStick(1),
 
 		//drivetrain
-		lf(5), // left front
-		lb(3), // left back
-		rf(2), // right front
-		rb(4), // right back
+		lf(7), // left front
+		lb(4), // left back
+		rf(6), // right front
+		rb(3), // right back
 		mecanumDrive(lf, lb, rf, rb),
 
 		//Game Object manipulators
-		shooterMotor(6),
-		intakeMotor(7),
-		climberMotor(8),
+		shooterMotor(5),
+		intakeMotor(2),
+		climberMotor(1),
 
 		//configure the gyroscope for use as a breakout on the roborio.
 		ahrs(SPI::Port::kMXP)
