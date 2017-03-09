@@ -19,8 +19,12 @@
 #define INTAKEREV 11
 #define SHOOTSWITCH 7
 #define SHOOTREV 6
+#define CLIMBUP 8
+#define IDEALUP 9
+#define IDEALDOWN 10
 
 class Robot: public frc::IterativeRobot {
+private:
 	//Create objects for a driver's joystick and a second operator's joystick
 	Joystick driverStick;
 	Joystick operatorStick;
@@ -48,6 +52,20 @@ class Robot: public frc::IterativeRobot {
 	int intakeSign = 1;
 	int shootSign = 1;
 
+	void updateDashboard() {
+		//DisabledPeriodic may only work with LiveWindow disabled
+		LiveWindow::GetInstance()->SetEnabled(false);
+
+		SmartDashboard::PutNumber("Shooter Speed 0-1", 0.68);
+		SmartDashboard::PutNumber("Ideal battery voltage", 13.6);
+		SmartDashboard::PutNumber("Ideal battery voltage", 13.6);
+		//set ideal shooter speed at beginning of match
+		double shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
+		//set proportional constant at beginning of match
+		double kP = SmartDashboard::GetNumber("Proportional shoot constant", 0.3);
+		//set voltage of an ideal battery at beginning of match
+		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
+	}
 public:
 	Robot():
 		driverStick(0),
@@ -93,19 +111,19 @@ public:
 		climberMotor.SetSafetyEnabled(true);
 		climberMotor.SetExpiration(0.1);
 	}
-
+	void DisabledInit() {
+		mecanumDrive.SetSafetyEnabled(false);
+	}
+	void DisabledPeriodic() {
+		updateDashboard();
+	}
 	void AutonomousInit() override {
 	}
 
 	void AutonomousPeriodic() {
 	}
 	void TeleopInit() {
-		//set ideal shooter speed at beginning of match
-		double shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
-		//set proportional constant at beginning of match
-		double kP = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68);
-		//set voltage of an ideal battery at beginning of match
-		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
+
 	}
 	void TeleopPeriodic() {
 
@@ -150,7 +168,6 @@ public:
 		 */
 
 
-
 		/*
 		 * SHOOTER CODE
 		 * The shooter is controlled with a toggling switch button. The speed and any proportional constants
@@ -158,18 +175,10 @@ public:
 		 *
 		 * the sign, or direction, of the shooters movement can be adjusted by pressing another toggle button.
 		 */
-		//set ideal shooter speed
-		double shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
-		//set proportional constant
-		double kP = SmartDashboard::GetNumber("shooter proportinal const", 0.3);
-		//set voltage of an ideal battery
-		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
-
 		// get shooter button
 		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
 			shootSwitch = !shootSwitch;
 		}
-
 		//get shooter rev button
 		if(operatorStick.GetRawButton(SHOOTREV) && !shootRev) {
 			shootSign *= -1;
@@ -191,40 +200,31 @@ public:
 
 		/*
 		 * DRIVING CODE
-		 * the driving code allows for switching between a field oriented driving style and a car-like one.
-		 * switching between the modes is done through a toggling switch button.
+		 * 'car' like mecanum driving with a deadzone
 		 */
-		//reset yaw for field oriented driving
-		if (driverStick.GetRawButton(YAWRESET)) {
-			ahrs.ZeroYaw();
+		double driveX = driverStick.GetX();
+		double driveY = driverStick.GetY();
+		double driveZ = driverStick.GetZ();
+		double deadZone = 0.1;
+		double magnitude = sqrt(driveX * driveX + driveY * driveY);
+		driveX /= magnitude;
+		driveY /= magnitude;
+		if(magnitude < deadZone) {
+			magnitude = 0; //no movement in deadzone radius
+		} else {
+			magnitude -= deadZone; //no discontinuity
 		}
+		driveX *= magnitude; //scale each amount
+		driveY *= magnitude;
 
-		//switch between field oriented and 'car' style mecanum driving
-		if(driverStick.GetRawButton(DRIVESWITCH)) {
-			driveSwitch = !driveSwitch;
-		}
-		if (driveSwitch) {
-			mecanumDrive.MecanumDrive_Cartesian(
-				driverThrottle * -driverStick.GetX(),
-				driverThrottle * -driverStick.GetY(),
-				driverThrottle * driverStick.GetZ());
-		} else if (!driveSwitch) {
-			mecanumDrive.MecanumDrive_Cartesian(
-				driverThrottle * -driverStick.GetX(),
-				driverThrottle * -driverStick.GetY(),
-				driverThrottle * driverStick.GetZ(),
-				ahrs.GetAngle());
-		}
+		mecanumDrive.MecanumDrive_Cartesian(
+				driverThrottle * driveX,
+				driverThrottle * driveY,
+				driverThrottle * driveZ);
 		/*
 		 * END DRIVING CODE
 		 */
 	}
-private:
-	frc::LiveWindow* lw = LiveWindow::GetInstance();
-	frc::SendableChooser<std::string> chooser;
-	const std::string autoNameDefault = "Default";
-	const std::string autoNameCustom = "My Auto";
-	std::string autoSelected;
 };
 
 START_ROBOT_CLASS(Robot)
