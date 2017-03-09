@@ -10,6 +10,9 @@
 #define IDEALUP 12
 #define IDEALDOWN 11
 
+//driver buttons
+#define DRIVESWITCH 8
+
 class Robot: public frc::IterativeRobot {
 private:
 	//Create objects for a driver's joystick and a second operator's joystick
@@ -29,6 +32,9 @@ private:
 	double operatorThrottle;
 	double driverThrottle;
 
+	int driveSwitch = 1;
+	bool driveSwitchPressed;
+
 	bool shootSwitch;
 	bool shootSwitchPressed;
 	bool shootRev;
@@ -41,7 +47,6 @@ private:
 	bool intakeRev;
 	double intakeSpeed;
 
-	bool driveSwitch;
 	int intakeSign = 1;
 	int shootSign = 1;
 
@@ -235,6 +240,15 @@ public:
 		 * DRIVING CODE
 		 * 'car' like mecanum driving with a deadzone
 		 */
+		// get shooter button
+		if(driverStick.GetRawButton(DRIVESWITCH) && !driveSwitchPressed) { //toggle
+			driveSwitch = -driveSwitch;
+			driveSwitchPressed = true;
+		}
+
+		else {
+			driveSwitchPressed = false;
+		}
 		double driveX = driverStick.GetX();
 		double driveY = driverStick.GetY();
 		double driveZ = driverStick.GetZ();
@@ -254,8 +268,8 @@ public:
 		driveY *= magnitude;
 
 		mecanumDrive.MecanumDrive_Cartesian(
-				driverThrottle * -driveX,
-				driverThrottle * driveY,
+				driverThrottle * driveX * driveSwitch,
+				driverThrottle * driveY * driveSwitch,
 				driverThrottle * -driveZ);
 		/*
 		 * END DRIVING CODE
