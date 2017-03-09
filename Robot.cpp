@@ -30,12 +30,14 @@ private:
 	double driverThrottle;
 
 	bool shootSwitch;
+	bool shootSwitchPressed;
 	bool shootRev;
 	double shooterSpeed = 0.65;
 	double kP = 0.2;
 	double idealV = 13.6;
 
 	bool intakeSwitch;
+	bool intakeSwitchPressed;
 	bool intakeRev;
 	double intakeSpeed;
 
@@ -48,7 +50,6 @@ private:
 	void updateDashboard() {
 		//DisabledPeriodic may only work with LiveWindow disabled
 		LiveWindow::GetInstance()->SetEnabled(false);
-
 		//set ideal shooter speed at beginning of match
 		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
 		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
@@ -174,14 +175,16 @@ public:
 		/* intake control
 		 * toggled intake control with a reverse control
 		 */
-		if(operatorStick.GetRawButton(INTAKESWITCH)) {
+		if(operatorStick.GetRawButton(INTAKESWITCH) && !intakeSwitchPressed) { //toggle
 			intakeSwitch = !intakeSwitch;
+			intakeSwitchPressed = true;
 		}
-		if(operatorStick.GetRawButton(INTAKEREV)) {
-			intakeSign = -1;
-		} else {
-			intakeSign = 1;
+		else {
+			intakeSwitchPressed = false;
 		}
+
+		intakeSign = operatorStick.GetRawButton(INTAKEREV) ? -1 : 1; // hold
+
 		if(intakeSwitch) {
 			intakeMotor.Set(intakeSpeed * intakeSign);
 		} else {
@@ -201,15 +204,17 @@ public:
 		 */
 
 		// get shooter button
-		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
+		if(operatorStick.GetRawButton(SHOOTSWITCH) && !shootSwitchPressed) { //toggle
 			shootSwitch = !shootSwitch;
+			shootSwitchPressed = true;
 		}
+
+		else {
+			shootSwitchPressed = false;
+		}
+
 		//get shooter rev button
-		if(operatorStick.GetRawButton(SHOOTREV)) {
-			shootSign = 1;
-		} else {
-			shootSign = -1;
-		}
+		shootSign = operatorStick.GetRawButton(SHOOTREV) ?  1 : -1; // hold
 		//shooter control
 		if(shootSwitch) {
 			//pdp voltage adjusts for Voltage drops
