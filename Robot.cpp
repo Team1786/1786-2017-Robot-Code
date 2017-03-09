@@ -157,13 +157,6 @@ public:
 		 * the intake is controlled through either a toggling switch button or through a throttle.
 		 * Another button is also bound to reverse the sign, or direction, of the intake motor.
 		 */
-		//get intake rev button
-		if(operatorStick.GetRawButton(INTAKEREV) && !intakeRev) {
-			intakeSign *= -1;
-			intakeRev = true;
-		} else if (!operatorStick.GetRawButton(INTAKEREV)) {
-			intakeRev = false;
-		}
 		/* intake control
 		 * toggled intake control with a reverse control
 		 */
@@ -198,11 +191,10 @@ public:
 			shootSwitch = !shootSwitch;
 		}
 		//get shooter rev button
-		if(operatorStick.GetRawButton(SHOOTREV) && !shootRev) {
-			shootSign *= -1;
-			shootRev = true;
-		} else if (!operatorStick.GetRawButton(SHOOTREV)) {
-			shootRev = false;
+		if(operatorStick.GetRawButton(SHOOTREV)) {
+			shootSign = 1;
+		} else {
+			shootSign = -1;
 		}
 		//shooter control
 		if(shootSwitch) {
