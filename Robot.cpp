@@ -24,7 +24,7 @@ private:
 	AHRS ahrs;
 
 	//pdp used to get voltages
-	PowerDistributionPanel *pdp;
+	PowerDistributionPanel pdp;
 
 	double operatorThrottle;
 	double driverThrottle;
@@ -197,7 +197,7 @@ public:
 		//shooter control
 		if(shootSwitch) {
 			//pdp voltage adjusts for Voltage drops
-			shooterMotor.Set(shooterSpeed * (kP * (idealV/pdp->GetVoltage())));
+			shooterMotor.Set(shooterSpeed * (kP * (idealV/pdp.GetVoltage())));
 		} else {
 			shooterMotor.Set(0);
 		}
