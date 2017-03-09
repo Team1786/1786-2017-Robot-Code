@@ -91,19 +91,15 @@ private:
 
 public:
 	Robot():
+		//control sticks
 		driverStick(0),
 		operatorStick(1),
 
-		/*
-		 * lf = left front
-		 * lb = left back
-		 * rf = right front
-		 * rb = right back
-		 */
-		lf(5),
-		lb(3),
-		rf(2),
-		rb(4),
+		//drivetrain
+		lf(5), // left front
+		lb(3), // left back
+		rf(2), // right front
+		rb(4), // right back
 		mecanumDrive(lf, lb, rf, rb),
 
 		//Game Object manipulators
@@ -136,6 +132,7 @@ public:
 	void TeleopInit() {
 		enableMotorSafety();
 	}
+
 	void TeleopPeriodic() {
 
 		/* Get input from Driver joystick. Changes range from -1->0, which makes sense physically
@@ -189,6 +186,7 @@ public:
 		/*
 		 * END INTAKE CODE
 		 */
+
 
 		/*
 		 * SHOOTER CODE
