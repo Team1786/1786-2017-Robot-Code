@@ -43,9 +43,12 @@ private:
 	int intakeSign = 1;
 	int shootSign = 1;
 
+	double autoTime = 2;
+
 	void updateDashboard() {
 		//DisabledPeriodic may only work with LiveWindow disabled
 		LiveWindow::GetInstance()->SetEnabled(false);
+
 		//set ideal shooter speed at beginning of match
 		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
 		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
@@ -55,6 +58,10 @@ private:
 		//set voltage of an ideal battery at beginning of match
 		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
 		SmartDashboard::PutNumber("Ideal battery voltage", idealV);
+
+		//auto end time
+		autoTime = SmartDashboard::GetNumber("Auto Time", 2);
+		SmartDashboard::PutNumber("Auto Time", autoTime);
 	}
 
 	void enableMotorSafety() {
@@ -122,6 +129,15 @@ public:
 
 	void AutonomousPeriodic() {
 		updateDashboard();
+		static Timer t;
+		if (!t.Get()) t.Start();
+		if(t.Get() < autoTime)
+		{
+		    mecanumDrive.MecanumDrive_Cartesian(0, -0.5, 0); //drive forwards
+		}
+		else {
+		    mecanumDrive.MecanumDrive_Cartesian(0, 0, 0);
+		}
 	}
 
 	void TeleopInit() {
