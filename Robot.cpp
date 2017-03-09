@@ -250,6 +250,106 @@ public:
 		 * END DRIVING CODE
 		 */
 	}
+
+	void TestInit() {
+		disableMotorSafety(); //easier like this
+	}
+
+	void TestPeriodic() {
+		const float drivePower = 0.2;
+		const float intakePower = 0.2;
+		const float climbPower = 0.2;
+		const float shootPower = 0.2;
+
+		enum TEST_STATES {
+			START,
+			DRIVE_FORWARD,
+			DRIVE_BACKWARD,
+			DRIVE_LEFT,
+			DRIVE_RIGHT,
+			TURN_RIGHT,
+			TURN_LEFT,
+			INTAKE_FORWARD,
+			INTAKE_BACKWARD,
+			CLIMBER_FORWARD,
+			CLIMBER_BACKWARD,
+			SHOOTER_FORWARD,
+			SHOOTER_BACKWARD,
+			STOP,
+			PAUSE // go to this state between changes
+		};
+
+		// switches to PAUSE between states
+		static enum TEST_STATES currentState = PAUSE;
+        // just iterates through the enum
+		static enum TEST_STATES realState = START;
+		// for edge triggering the button
+		static bool switchStateToggle = false;
+
+		if(driverStick.GetTrigger() && !switchStateToggle) {
+			if (currentState == PAUSE) {
+				// hacky way to increment through enum
+				realState = TEST_STATES(int(realState) + 1);
+				currentState = realState;
+			}
+			else if (currentState != STOP) {
+				currentState = PAUSE;
+			}
+			switchStateToggle = true;
+		} else if (!driverStick.GetTrigger()) {
+			switchStateToggle = false;
+		}
+
+		switch (currentState) {
+		DRIVE_FORWARD:
+			mecanumDrive.MecanumDrive_Cartesian(0, drivePower, 0);
+			break;
+		DRIVE_BACKWARD:
+			mecanumDrive.MecanumDrive_Cartesian(0, -drivePower, 0);
+			break;
+		DRIVE_LEFT:
+			mecanumDrive.MecanumDrive_Cartesian(drivePower, 0, 0);
+			break;
+		DRIVE_RIGHT:
+			mecanumDrive.MecanumDrive_Cartesian(-drivePower, 0, 0);
+			break;
+		TURN_RIGHT:
+			mecanumDrive.MecanumDrive_Cartesian(0, 0, drivePower);
+			break;
+		TURN_LEFT:
+			mecanumDrive.MecanumDrive_Cartesian(0, 0, -drivePower);
+			break;
+		INTAKE_FORWARD:
+			intakeMotor.Set(intakePower);
+			break;
+		INTAKE_BACKWARD:
+			intakeMotor.Set(-intakePower);
+			break;
+		CLIMBER_FORWARD:
+			climberMotor.Set(climbPower);
+			break;
+		CLIMBER_BACKWARD:
+			climberMotor.Set(-climbPower);
+			break;
+		SHOOTER_FORWARD:
+			shooterMotor.Set(shootPower);
+			break;
+		SHOOTER_BACKWARD:
+			shooterMotor.Set(-shootPower);
+			break;
+		START: // same as pause
+		STOP:
+		PAUSE: // stop all motors
+			mecanumDrive.MecanumDrive_Cartesian(0, 0, 0);
+			intakeMotor.Set(0);
+			intakeMotor.Set(0);
+			climberMotor.Set(0);
+			climberMotor.Set(0);
+			shooterMotor.Set(0);
+			shooterMotor.Set(0);
+			break;
+		}
+	}
 };
 
 START_ROBOT_CLASS(Robot)
