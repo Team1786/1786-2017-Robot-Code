@@ -299,44 +299,59 @@ public:
 
 		switch (currentState) {
 		DRIVE_FORWARD:
+			SmartDashboard::PutString("Test Status", "Drive Forward");
 			mecanumDrive.MecanumDrive_Cartesian(0, drivePower, 0);
 			break;
 		DRIVE_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Drive Backward");
 			mecanumDrive.MecanumDrive_Cartesian(0, -drivePower, 0);
 			break;
 		DRIVE_LEFT:
+			SmartDashboard::PutString("Test Status", "Drive Left");
 			mecanumDrive.MecanumDrive_Cartesian(drivePower, 0, 0);
 			break;
 		DRIVE_RIGHT:
+			SmartDashboard::PutString("Test Status", "Drive Right");
 			mecanumDrive.MecanumDrive_Cartesian(-drivePower, 0, 0);
 			break;
 		TURN_RIGHT:
+			SmartDashboard::PutString("Test Status", "Turn Right");
 			mecanumDrive.MecanumDrive_Cartesian(0, 0, drivePower);
 			break;
 		TURN_LEFT:
+			SmartDashboard::PutString("Test Status", "Turn Left");
 			mecanumDrive.MecanumDrive_Cartesian(0, 0, -drivePower);
 			break;
 		INTAKE_FORWARD:
+			SmartDashboard::PutString("Test Status", "Intake Forward");
 			intakeMotor.Set(intakePower);
 			break;
 		INTAKE_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Intake Backward");
 			intakeMotor.Set(-intakePower);
 			break;
 		CLIMBER_FORWARD:
+			SmartDashboard::PutString("Test Status", "Climber Forward");
 			climberMotor.Set(climbPower);
 			break;
 		CLIMBER_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Climber Backward");
 			climberMotor.Set(-climbPower);
 			break;
 		SHOOTER_FORWARD:
+			SmartDashboard::PutString("Test Status", "Shooter Forward");
 			shooterMotor.Set(shootPower);
 			break;
 		SHOOTER_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Shooter Backward");
 			shooterMotor.Set(-shootPower);
 			break;
-		START: // same as pause
+		START:
+			SmartDashboard::PutString("Test Status", "Start");
 		STOP:
+			SmartDashboard::PutString("Test Status", "Stop");
 		PAUSE: // stop all motors
+			SmartDashboard::PutString("Test Status", "Pause");
 			mecanumDrive.MecanumDrive_Cartesian(0, 0, 0);
 			intakeMotor.Set(0);
 			intakeMotor.Set(0);
