@@ -254,9 +254,9 @@ public:
 		driveY *= magnitude;
 
 		mecanumDrive.MecanumDrive_Cartesian(
-				driverThrottle * driveX,
+				driverThrottle * -driveX,
 				driverThrottle * driveY,
-				driverThrottle * driveZ);
+				driverThrottle * -driveZ);
 		/*
 		 * END DRIVING CODE
 		 */
