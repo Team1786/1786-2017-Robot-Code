@@ -62,6 +62,33 @@ private:
 		//set voltage of an ideal battery at beginning of match
 		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
 	}
+
+	void enableMotorSafety() {
+		//motor safety for the drive system
+		mecanumDrive.SetSafetyEnabled(true);
+		mecanumDrive.SetExpiration(0.1);
+
+		//motor safety for the shooter
+		shooterMotor.SetSafetyEnabled(true);
+		shooterMotor.SetExpiration(0.1);
+
+		//motor safety for the Intake
+		intakeMotor.SetSafetyEnabled(true);
+		intakeMotor.SetExpiration(0.1);
+
+		//motor safety for the Climber
+		climberMotor.SetSafetyEnabled(true);
+		climberMotor.SetExpiration(0.1);
+	}
+
+	void disableMotorSafety() {
+		mecanumDrive.SetSafetyEnabled(false);
+		shooterMotor.SetSafetyEnabled(false);
+		intakeMotor.SetSafetyEnabled(false);
+		climberMotor.SetSafetyEnabled(false);
+	}
+
+
 public:
 	Robot():
 		driverStick(0),
@@ -90,36 +117,24 @@ public:
 		//invert drive motors
 		lf.SetInverted(true);
 		lb.SetInverted(true);
-
-		//motor safety for the drive system, and assign CANTalons
-		mecanumDrive.SetSafetyEnabled(true);
-		mecanumDrive.SetExpiration(0.1);
-
-		//motor safety for the shooter
-		shooterMotor.SetSafetyEnabled(true);
-		shooterMotor.SetExpiration(0.1);
-
-		//motor safety for the Intake
-		intakeMotor.SetSafetyEnabled(true);
-		intakeMotor.SetExpiration(0.1);
-
-		//motor safety for the Climber
-		climberMotor.SetSafetyEnabled(true);
-		climberMotor.SetExpiration(0.1);
 	}
+
 	void DisabledInit() {
-		mecanumDrive.SetSafetyEnabled(false);
+		disableMotorSafety();
 	}
 	void DisabledPeriodic() {
 		updateDashboard();
 	}
-	void AutonomousInit() override {
+
+	void AutonomousInit() {
+		enableMotorSafety();
 	}
 
 	void AutonomousPeriodic() {
 	}
-	void TeleopInit() {
 
+	void TeleopInit() {
+		enableMotorSafety();
 	}
 	void TeleopPeriodic() {
 
