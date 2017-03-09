@@ -50,19 +50,26 @@ private:
 	void updateDashboard() {
 		//DisabledPeriodic may only work with LiveWindow disabled
 		LiveWindow::GetInstance()->SetEnabled(false);
-		//set ideal shooter speed at beginning of match
+
+		// ideal shooter speed
 		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
 		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
-		//set proportional constant at beginning of match
-		kP = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68);
-		SmartDashboard::PutNumber("Shooter Speed 0-1", kP);
-		//set voltage of an ideal battery at beginning of match
+		SmartDashboard::SetPersistent("Shooter Speed 0-1");
+
+		// proportional constant for shooter scaling
+		kP = SmartDashboard::GetNumber("Shooter Scaling", 0.68);
+		SmartDashboard::PutNumber("Shooter Scaling", kP);
+		SmartDashboard::SetPersistent("Shooter Scaling");
+
+		// voltage of an ideal battery
 		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
 		SmartDashboard::PutNumber("Ideal battery voltage", idealV);
+		SmartDashboard::SetPersistent("Ideal battery voltage");
 
-		//auto end time
+		// auto end time
 		autoTime = SmartDashboard::GetNumber("Auto Time", 2);
 		SmartDashboard::PutNumber("Auto Time", autoTime);
+		SmartDashboard::SetPersistent("Auto Time");
 	}
 
 	void enableMotorSafety() {
