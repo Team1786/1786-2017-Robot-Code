@@ -41,13 +41,17 @@ private:
 
 	double operatorThrottle;
 	double driverThrottle;
+
+	bool shootSwitch;
+	bool shootRev;
 	double shooterSpeed = 0.78;
 	double kP = 0.2;
 	double idealV = 13.6;
 
-	bool shootSwitch;
+	bool intakeSwitch;
 	bool intakeRev;
-	bool shootRev;
+	double intakeSpeed;
+
 	bool driveSwitch;
 	int intakeSign = 1;
 	int shootSign = 1;
@@ -134,27 +138,7 @@ public:
 		operatorThrottle = ((1 - operatorStick.GetThrottle()) / 2);
 
 
-		/*
-		 * INTAKE CODE
-		 * the intake is controlled through either a toggling switch button or through a throttle.
-		 * Another button is also bound to reverse the sign, or direction, of the intake motor.
-		 */
-		//get intake rev button
-		if(operatorStick.GetRawButton(INTAKEREV) && !intakeRev) {
-			intakeSign *= -1;
-			intakeRev = true;
-		} else if (!operatorStick.GetRawButton(INTAKEREV)) {
-			intakeRev = false;
-		}
-		// intake control
-		if(operatorStick.GetRawButton(INTAKESWITCH) && operatorThrottle == 0) {
-			intakeMotor.Set(0.5 * intakeSign);
-		} else {
-			intakeMotor.Set(operatorThrottle * intakeSign);
-		}
-		/*
-		 * END INTAKE CODE
-		 */
+
 
 
 		/*
@@ -167,6 +151,37 @@ public:
 		 * END CLIMBER CODE
 		 */
 
+		/*
+		 * INTAKE CODE
+		 * the intake is controlled through either a toggling switch button or through a throttle.
+		 * Another button is also bound to reverse the sign, or direction, of the intake motor.
+		 */
+		//get intake rev button
+		if(operatorStick.GetRawButton(INTAKEREV) && !intakeRev) {
+			intakeSign *= -1;
+			intakeRev = true;
+		} else if (!operatorStick.GetRawButton(INTAKEREV)) {
+			intakeRev = false;
+		}
+		/* intake control
+		 * toggled intake control with a reverse control
+		 */
+		if(operatorStick.GetRawButton(INTAKESWITCH)) {
+			intakeSwitch = !intakeSwitch;
+		}
+		if(operatorStick.GetRawButton(INTAKEREV)) {
+			intakeSign = -1;
+		} else {
+			intakeSign = 1;
+		}
+		if(intakeSwitch) {
+			intakeMotor.Set(intakeSpeed * intakeSign);
+		} else {
+			intakeMotor.Set(0);
+		}
+		/*
+		 * END INTAKE CODE
+		 */
 
 		/*
 		 * SHOOTER CODE
@@ -207,13 +222,16 @@ public:
 		double driveZ = driverStick.GetZ();
 		double deadZone = 0.1;
 		double magnitude = sqrt(driveX * driveX + driveY * driveY);
+
 		driveX /= magnitude;
 		driveY /= magnitude;
+
 		if(magnitude < deadZone) {
 			magnitude = 0; //no movement in deadzone radius
 		} else {
 			magnitude -= deadZone; //no discontinuity
 		}
+
 		driveX *= magnitude; //scale each amount
 		driveY *= magnitude;
 
