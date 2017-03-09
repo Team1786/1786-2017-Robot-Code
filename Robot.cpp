@@ -48,10 +48,13 @@ private:
 		LiveWindow::GetInstance()->SetEnabled(false);
 		//set ideal shooter speed at beginning of match
 		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
+		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
 		//set proportional constant at beginning of match
 		kP = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68);
+		SmartDashboard::PutNumber("Shooter Speed 0-1", kP);
 		//set voltage of an ideal battery at beginning of match
 		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
+		SmartDashboard::PutNumber("Ideal battery voltage", idealV);
 	}
 
 	void enableMotorSafety() {
