@@ -47,31 +47,6 @@ private:
 
 	double autoTime = 2;
 
-	void updateDashboard() {
-		//DisabledPeriodic may only work with LiveWindow disabled
-		LiveWindow::GetInstance()->SetEnabled(false);
-
-		// ideal shooter speed
-		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
-		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
-		SmartDashboard::SetPersistent("Shooter Speed 0-1");
-
-		// proportional constant for shooter scaling
-		kP = SmartDashboard::GetNumber("Shooter Scaling", 0.68);
-		SmartDashboard::PutNumber("Shooter Scaling", kP);
-		SmartDashboard::SetPersistent("Shooter Scaling");
-
-		// voltage of an ideal battery
-		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
-		SmartDashboard::PutNumber("Ideal battery voltage", idealV);
-		SmartDashboard::SetPersistent("Ideal battery voltage");
-
-		// auto end time
-		autoTime = SmartDashboard::GetNumber("Auto Time", 2);
-		SmartDashboard::PutNumber("Auto Time", autoTime);
-		SmartDashboard::SetPersistent("Auto Time");
-	}
-
 	void enableMotorSafety() {
 		//motor safety for the drive system
 		mecanumDrive.SetSafetyEnabled(true);
@@ -124,11 +99,35 @@ public:
 		lb.SetInverted(true);
 	}
 
+	void RobotPeriodic() {
+		//DisabledPeriodic may only work with LiveWindow disabled
+		LiveWindow::GetInstance()->SetEnabled(false);
+
+		// ideal shooter speed
+		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
+		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
+		SmartDashboard::SetPersistent("Shooter Speed 0-1");
+
+		// proportional constant for shooter scaling
+		kP = SmartDashboard::GetNumber("Shooter Scaling", 0.68);
+		SmartDashboard::PutNumber("Shooter Scaling", kP);
+		SmartDashboard::SetPersistent("Shooter Scaling");
+
+		// voltage of an ideal battery
+		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
+		SmartDashboard::PutNumber("Ideal battery voltage", idealV);
+		SmartDashboard::SetPersistent("Ideal battery voltage");
+
+		// auto end time
+		autoTime = SmartDashboard::GetNumber("Auto Time", 2);
+		SmartDashboard::PutNumber("Auto Time", autoTime);
+		SmartDashboard::SetPersistent("Auto Time");
+	}
+
 	void DisabledInit() {
 		disableMotorSafety();
 	}
 	void DisabledPeriodic() {
-		updateDashboard();
 	}
 
 	void AutonomousInit() {
@@ -136,7 +135,6 @@ public:
 	}
 
 	void AutonomousPeriodic() {
-		updateDashboard();
 		static Timer t;
 		if (!t.Get()) t.Start();
 		if(t.Get() < autoTime)
@@ -153,7 +151,6 @@ public:
 	}
 
 	void TeleopPeriodic() {
-		updateDashboard();
 		/* Get input from Driver joystick. Changes range from -1->0, which makes sense physically
 		 * Generally, the input on these joysticks is flipped such that we need to reverse it.
 		 */
@@ -270,7 +267,6 @@ public:
 	}
 
 	void TestPeriodic() {
-		updateDashboard();
 		const float drivePower = 0.2;
 		const float intakePower = 0.2;
 		const float climbPower = 0.2;
