@@ -41,7 +41,6 @@ class Robot: public frc::IterativeRobot {
 	double kP = 0.2;
 	double idealV = 13.6;
 
-	bool intakeSwitch;
 	bool shootSwitch;
 	bool intakeRev;
 	bool shootRev;
@@ -113,8 +112,8 @@ public:
 		/* Get input from Driver joystick. Changes range from -1->0, which makes sense physically
 		 * Generally, the input on these joysticks is flipped such that we need to reverse it.
 		 */
-		driverThrottle = ((driverStick.GetThrottle()-1)/-2);
-		operatorThrottle = ((operatorStick.GetThrottle()-1)/-2);
+		driverThrottle = ((1 - driverStick.GetThrottle()) / 2);
+		operatorThrottle = ((1 - operatorStick.GetThrottle()) / 2);
 
 
 		/*
@@ -122,21 +121,15 @@ public:
 		 * the intake is controlled through either a toggling switch button or through a throttle.
 		 * Another button is also bound to reverse the sign, or direction, of the intake motor.
 		 */
-		//get intake button
-		if(operatorStick.GetRawButton(INTAKESWITCH)) {
-			intakeSwitch = true;
-		} else if(!operatorStick.GetRawButton(INTAKESWITCH)) {
-			intakeSwitch = false;
-		}
 		//get intake rev button
 		if(operatorStick.GetRawButton(INTAKEREV) && !intakeRev) {
-			intakeSign = intakeSign * -1;
+			intakeSign *= -1;
 			intakeRev = true;
 		} else if (!operatorStick.GetRawButton(INTAKEREV)) {
 			intakeRev = false;
 		}
 		// intake control
-		if(intakeSwitch && operatorThrottle == 0) {
+		if(operatorStick.GetRawButton(INTAKESWITCH) && operatorThrottle == 0) {
 			intakeMotor.Set(0.5 * intakeSign);
 		} else {
 			intakeMotor.Set(operatorThrottle * intakeSign);
@@ -173,10 +166,8 @@ public:
 		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
 
 		// get shooter button
-		if(operatorStick.GetRawButton(SHOOTSWITCH) && !shootSwitch) {
-			shootSwitch = true;
-		} else if(operatorStick.GetRawButton(SHOOTSWITCH) && shootSwitch) {
-			shootSwitch = false;
+		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
+			shootSwitch = !shootSwitch;
 		}
 
 		//get shooter rev button
@@ -204,17 +195,13 @@ public:
 		 * switching between the modes is done through a toggling switch button.
 		 */
 		//reset yaw for field oriented driving
-		bool reset_yaw_button_pressed = driverStick.GetRawButton(YAWRESET);
-		if ( reset_yaw_button_pressed ) {
+		if (driverStick.GetRawButton(YAWRESET)) {
 			ahrs.ZeroYaw();
 		}
 
 		//switch between field oriented and 'car' style mecanum driving
-		if(driverStick.GetRawButton(DRIVESWITCH) && !driveSwitch) {
-
-			driveSwitch = true;
-		} else if(driverStick.GetRawButton(DRIVESWITCH) && driveSwitch) {
-			driveSwitch = false;
+		if(driverStick.GetRawButton(DRIVESWITCH)) {
+			driveSwitch = !driveSwitch;
 		}
 		if (driveSwitch) {
 			mecanumDrive.MecanumDrive_Cartesian(driverThrottle * -driverStick.GetX(),
