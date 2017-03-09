@@ -1,14 +1,6 @@
-#include <iostream>
-#include <memory>
-#include <string>
+#include <AHRS.h>
 #include <CANTalon.h>
 #include <WPILib.h>
-#include <IterativeRobot.h>
-#include <LiveWindow/LiveWindow.h>
-#include <SmartDashboard/SendableChooser.h>
-#include <SmartDashboard/SmartDashboard.h>
-#include <cmath>
-#include <AHRS.h>
 
 //on driver side
 #define YAWRESET 12
