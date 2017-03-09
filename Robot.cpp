@@ -51,16 +51,12 @@ private:
 	void updateDashboard() {
 		//DisabledPeriodic may only work with LiveWindow disabled
 		LiveWindow::GetInstance()->SetEnabled(false);
-
-		SmartDashboard::PutNumber("Shooter Speed 0-1", 0.68);
-		SmartDashboard::PutNumber("Ideal battery voltage", 13.6);
-		SmartDashboard::PutNumber("Ideal battery voltage", 13.6);
 		//set ideal shooter speed at beginning of match
-		double shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
+		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
 		//set proportional constant at beginning of match
-		double kP = SmartDashboard::GetNumber("Proportional shoot constant", 0.3);
+		kP = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68);
 		//set voltage of an ideal battery at beginning of match
-		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
+		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
 	}
 
 	void enableMotorSafety() {
@@ -127,6 +123,7 @@ public:
 	}
 
 	void AutonomousPeriodic() {
+		updateDashboard();
 	}
 
 	void TeleopInit() {
@@ -134,7 +131,7 @@ public:
 	}
 
 	void TeleopPeriodic() {
-
+		updateDashboard();
 		/* Get input from Driver joystick. Changes range from -1->0, which makes sense physically
 		 * Generally, the input on these joysticks is flipped such that we need to reverse it.
 		 */
@@ -195,6 +192,7 @@ public:
 		 *
 		 * the sign, or direction, of the shooters movement can be adjusted by pressing another toggle button.
 		 */
+
 		// get shooter button
 		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
 			shootSwitch = !shootSwitch;
@@ -254,6 +252,7 @@ public:
 	}
 
 	void TestPeriodic() {
+		updateDashboard();
 		const float drivePower = 0.2;
 		const float intakePower = 0.2;
 		const float climbPower = 0.2;
