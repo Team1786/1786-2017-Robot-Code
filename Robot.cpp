@@ -194,7 +194,7 @@ public:
 
 		intakeSign = operatorStick.GetRawButton(INTAKEREV) ? -1 : 1; // hold
 
-		if(intakeSwitch) {
+		if(operatorStick.GetRawButton(INTAKESWITCH)) {
 			intakeMotor.Set(intakeSpeed * intakeSign);
 		} else {
 			intakeMotor.Set(0);
@@ -225,9 +225,9 @@ public:
 		//get shooter rev button
 		shootSign = operatorStick.GetRawButton(SHOOTREV) ?  1 : -1; // hold
 		//shooter control
-		if(shootSwitch) {
+		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
 			//pdp voltage adjusts for Voltage drops
-			shooterMotor.Set(shooterSpeed * (kP * (idealV/pdp.GetVoltage())));
+			shooterMotor.Set(-shooterSpeed * (kP * (idealV/pdp.GetVoltage())));
 		} else {
 			shooterMotor.Set(0);
 		}
