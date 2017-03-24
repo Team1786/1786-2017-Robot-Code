@@ -1,27 +1,17 @@
-#include <iostream>
-#include <memory>
-#include <string>
+#include <AHRS.h>
 #include <CANTalon.h>
 #include <WPILib.h>
-#include <IterativeRobot.h>
-#include <LiveWindow/LiveWindow.h>
-#include <SmartDashboard/SendableChooser.h>
-#include <SmartDashboard/SmartDashboard.h>
-#include <cmath>
-#include <AHRS.h>
-
-//on driver side
-#define YAWRESET 12
-#define DRIVESWITCH 11
 
 //on operator side
-#define INTAKESWITCH 12
-#define INTAKEREV 11
-#define SHOOTSWITCH 7
-#define SHOOTREV 6
-#define CLIMBUP 8
-#define IDEALUP 9
-#define IDEALDOWN 10
+#define INTAKESWITCH 2
+#define INTAKEREV 3
+#define SHOOTSWITCH 1
+#define SHOOTREV 4
+#define IDEALUP 12
+#define IDEALDOWN 11
+
+//driver buttons
+#define DRIVESWITCH 8
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -37,69 +27,33 @@ private:
 	AHRS ahrs;
 
 	//pdp used to get voltages
-	PowerDistributionPanel *pdp;
+	PowerDistributionPanel pdp;
 
 	double operatorThrottle;
 	double driverThrottle;
 
+	int driveSwitch = 1;
+	bool driveSwitchPressed;
+
 	bool shootSwitch;
+	bool shootSwitchPressed;
 	bool shootRev;
 	double shooterSpeed = 0.65;
 	double kP = 0.2;
 	double idealV = 13.6;
 
 	bool intakeSwitch;
+	bool intakeSwitchPressed;
 	bool intakeRev;
 	double intakeSpeed;
 
-	bool driveSwitch;
 	int intakeSign = 1;
 	int shootSign = 1;
 
-	void updateDashboard() {
-		//DisabledPeriodic may only work with LiveWindow disabled
-		LiveWindow::GetInstance()->SetEnabled(false);
+	double autoTime = 2;
 
-		SmartDashboard::PutNumber("Shooter Speed 0-1", 0.68);
-		SmartDashboard::PutNumber("Ideal battery voltage", 13.6);
-		SmartDashboard::PutNumber("Ideal battery voltage", 13.6);
-		//set ideal shooter speed at beginning of match
-		double shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
-		//set proportional constant at beginning of match
-		double kP = SmartDashboard::GetNumber("Proportional shoot constant", 0.3);
-		//set voltage of an ideal battery at beginning of match
-		double idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
-	}
-public:
-	Robot():
-		driverStick(0),
-		operatorStick(1),
-
-		/*
-		 * lf = left front
-		 * lb = left back
-		 * rf = right front
-		 * rb = right back
-		 */
-		lf(5),
-		lb(3),
-		rf(2),
-		rb(4),
-		mecanumDrive(lf, lb, rf, rb),
-
-		//Game Object manipulators
-		shooterMotor(6),
-		intakeMotor(7),
-		climberMotor(8),
-
-		//configure the gyroscope for use as a breakout on the roborio.
-		ahrs(SPI::Port::kMXP)
-	{
-		//invert drive motors
-		lf.SetInverted(true);
-		lb.SetInverted(true);
-
-		//motor safety for the drive system, and assign CANTalons
+	void enableMotorSafety() {
+		//motor safety for the drive system
 		mecanumDrive.SetSafetyEnabled(true);
 		mecanumDrive.SetExpiration(0.1);
 
@@ -115,22 +69,93 @@ public:
 		climberMotor.SetSafetyEnabled(true);
 		climberMotor.SetExpiration(0.1);
 	}
-	void DisabledInit() {
+
+	void disableMotorSafety() {
 		mecanumDrive.SetSafetyEnabled(false);
+		shooterMotor.SetSafetyEnabled(false);
+		intakeMotor.SetSafetyEnabled(false);
+		climberMotor.SetSafetyEnabled(false);
+	}
+
+
+public:
+	Robot():
+		//control sticks
+		driverStick(0),
+		operatorStick(1),
+
+		//drivetrain
+		lf(7), // left front
+		lb(4), // left back
+		rf(6), // right front
+		rb(3), // right back
+		mecanumDrive(lf, lb, rf, rb),
+
+		//Game Object manipulators
+		shooterMotor(5),
+		intakeMotor(2),
+		climberMotor(1),
+
+		//configure the gyroscope for use as a breakout on the roborio.
+		ahrs(SPI::Port::kMXP)
+	{
+		//invert drive motors
+		lf.SetInverted(true);
+		lb.SetInverted(true);
+	}
+
+	void RobotPeriodic() {
+		//DisabledPeriodic may only work with LiveWindow disabled
+		LiveWindow::GetInstance()->SetEnabled(false);
+
+		// ideal shooter speed
+		shooterSpeed = SmartDashboard::GetNumber("Shooter Speed 0-1", 0.68) * shootSign;
+		SmartDashboard::PutNumber("Shooter Speed 0-1", shooterSpeed/shootSign);
+		SmartDashboard::SetPersistent("Shooter Speed 0-1");
+
+		// proportional constant for shooter scaling
+		kP = SmartDashboard::GetNumber("Shooter Scaling", 0.68);
+		SmartDashboard::PutNumber("Shooter Scaling", kP);
+		SmartDashboard::SetPersistent("Shooter Scaling");
+
+		// voltage of an ideal battery
+		idealV = SmartDashboard::GetNumber("Ideal battery voltage", 13.6);
+		SmartDashboard::PutNumber("Ideal battery voltage", idealV);
+		SmartDashboard::SetPersistent("Ideal battery voltage");
+
+		// auto end time
+		autoTime = SmartDashboard::GetNumber("Auto Time", 2);
+		SmartDashboard::PutNumber("Auto Time", autoTime);
+		SmartDashboard::SetPersistent("Auto Time");
+	}
+
+	void DisabledInit() {
+		disableMotorSafety();
 	}
 	void DisabledPeriodic() {
-		updateDashboard();
 	}
-	void AutonomousInit() override {
+
+	void AutonomousInit() {
+		enableMotorSafety();
 	}
 
 	void AutonomousPeriodic() {
+		static Timer t;
+		if (!t.Get()) t.Start();
+		if(t.Get() < autoTime)
+		{
+		    mecanumDrive.MecanumDrive_Cartesian(0, -0.5, 0); //drive forwards
+		}
+		else {
+		    mecanumDrive.MecanumDrive_Cartesian(0, 0, 0);
+		}
 	}
+
 	void TeleopInit() {
-
+		enableMotorSafety();
 	}
-	void TeleopPeriodic() {
 
+	void TeleopPeriodic() {
 		/* Get input from Driver joystick. Changes range from -1->0, which makes sense physically
 		 * Generally, the input on these joysticks is flipped such that we need to reverse it.
 		 */
@@ -156,25 +181,20 @@ public:
 		 * the intake is controlled through either a toggling switch button or through a throttle.
 		 * Another button is also bound to reverse the sign, or direction, of the intake motor.
 		 */
-		//get intake rev button
-		if(operatorStick.GetRawButton(INTAKEREV) && !intakeRev) {
-			intakeSign *= -1;
-			intakeRev = true;
-		} else if (!operatorStick.GetRawButton(INTAKEREV)) {
-			intakeRev = false;
-		}
 		/* intake control
 		 * toggled intake control with a reverse control
 		 */
-		if(operatorStick.GetRawButton(INTAKESWITCH)) {
+		if(operatorStick.GetRawButton(INTAKESWITCH) && !intakeSwitchPressed) { //toggle
 			intakeSwitch = !intakeSwitch;
+			intakeSwitchPressed = true;
 		}
-		if(operatorStick.GetRawButton(INTAKEREV)) {
-			intakeSign = -1;
-		} else {
-			intakeSign = 1;
+		else {
+			intakeSwitchPressed = false;
 		}
-		if(intakeSwitch) {
+
+		intakeSign = operatorStick.GetRawButton(INTAKEREV) ? -1 : 1; // hold
+
+		if(operatorStick.GetRawButton(INTAKESWITCH)) {
 			intakeMotor.Set(intakeSpeed * intakeSign);
 		} else {
 			intakeMotor.Set(0);
@@ -183,6 +203,7 @@ public:
 		 * END INTAKE CODE
 		 */
 
+
 		/*
 		 * SHOOTER CODE
 		 * The shooter is controlled with a toggling switch button. The speed and any proportional constants
@@ -190,21 +211,23 @@ public:
 		 *
 		 * the sign, or direction, of the shooters movement can be adjusted by pressing another toggle button.
 		 */
+
 		// get shooter button
-		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
+		if(operatorStick.GetRawButton(SHOOTSWITCH) && !shootSwitchPressed) { //toggle
 			shootSwitch = !shootSwitch;
+			shootSwitchPressed = true;
 		}
+
+		else {
+			shootSwitchPressed = false;
+		}
+
 		//get shooter rev button
-		if(operatorStick.GetRawButton(SHOOTREV) && !shootRev) {
-			shootSign *= -1;
-			shootRev = true;
-		} else if (!operatorStick.GetRawButton(SHOOTREV)) {
-			shootRev = false;
-		}
+		shootSign = operatorStick.GetRawButton(SHOOTREV) ?  1 : -1; // hold
 		//shooter control
-		if(shootSwitch) {
+		if(operatorStick.GetRawButton(SHOOTSWITCH)) {
 			//pdp voltage adjusts for Voltage drops
-			shooterMotor.Set(shooterSpeed * (kP * (idealV/pdp->GetVoltage())));
+			shooterMotor.Set(-shooterSpeed * (kP * (idealV/pdp.GetVoltage())));
 		} else {
 			shooterMotor.Set(0);
 		}
@@ -217,6 +240,15 @@ public:
 		 * DRIVING CODE
 		 * 'car' like mecanum driving with a deadzone
 		 */
+		// get shooter button
+		if(driverStick.GetRawButton(DRIVESWITCH) && !driveSwitchPressed) { //toggle
+			driveSwitch = -driveSwitch;
+			driveSwitchPressed = true;
+		}
+
+		else {
+			driveSwitchPressed = false;
+		}
 		double driveX = driverStick.GetX();
 		double driveY = driverStick.GetY();
 		double driveZ = driverStick.GetZ();
@@ -236,12 +268,127 @@ public:
 		driveY *= magnitude;
 
 		mecanumDrive.MecanumDrive_Cartesian(
-				driverThrottle * driveX,
-				driverThrottle * driveY,
-				driverThrottle * driveZ);
+				driverThrottle * driveX * driveSwitch,
+				driverThrottle * driveY * driveSwitch,
+				driverThrottle * -driveZ);
 		/*
 		 * END DRIVING CODE
 		 */
+	}
+
+	void TestInit() {
+		disableMotorSafety(); //easier like this
+	}
+
+	void TestPeriodic() {
+		const float drivePower = 0.2;
+		const float intakePower = 0.2;
+		const float climbPower = 0.2;
+		const float shootPower = 0.2;
+
+		enum TEST_STATES {
+			START,
+			DRIVE_FORWARD,
+			DRIVE_BACKWARD,
+			DRIVE_LEFT,
+			DRIVE_RIGHT,
+			TURN_RIGHT,
+			TURN_LEFT,
+			INTAKE_FORWARD,
+			INTAKE_BACKWARD,
+			CLIMBER_FORWARD,
+			CLIMBER_BACKWARD,
+			SHOOTER_FORWARD,
+			SHOOTER_BACKWARD,
+			STOP,
+			PAUSE // go to this state between changes
+		};
+
+		// switches to PAUSE between states
+		static enum TEST_STATES currentState = PAUSE;
+        // just iterates through the enum
+		static enum TEST_STATES realState = START;
+		// for edge triggering the button
+		static bool switchStateToggle = false;
+
+		if(driverStick.GetTrigger() && !switchStateToggle) {
+			if (currentState == PAUSE) {
+				// hacky way to increment through enum
+				realState = TEST_STATES(int(realState) + 1);
+				currentState = realState;
+			}
+			else if (currentState != STOP) {
+				currentState = PAUSE;
+			}
+			switchStateToggle = true;
+		} else if (!driverStick.GetTrigger()) {
+			switchStateToggle = false;
+		}
+
+		switch (currentState) {
+		DRIVE_FORWARD:
+			SmartDashboard::PutString("Test Status", "Drive Forward");
+			mecanumDrive.MecanumDrive_Cartesian(0, drivePower, 0);
+			break;
+		DRIVE_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Drive Backward");
+			mecanumDrive.MecanumDrive_Cartesian(0, -drivePower, 0);
+			break;
+		DRIVE_LEFT:
+			SmartDashboard::PutString("Test Status", "Drive Left");
+			mecanumDrive.MecanumDrive_Cartesian(drivePower, 0, 0);
+			break;
+		DRIVE_RIGHT:
+			SmartDashboard::PutString("Test Status", "Drive Right");
+			mecanumDrive.MecanumDrive_Cartesian(-drivePower, 0, 0);
+			break;
+		TURN_RIGHT:
+			SmartDashboard::PutString("Test Status", "Turn Right");
+			mecanumDrive.MecanumDrive_Cartesian(0, 0, drivePower);
+			break;
+		TURN_LEFT:
+			SmartDashboard::PutString("Test Status", "Turn Left");
+			mecanumDrive.MecanumDrive_Cartesian(0, 0, -drivePower);
+			break;
+		INTAKE_FORWARD:
+			SmartDashboard::PutString("Test Status", "Intake Forward");
+			intakeMotor.Set(intakePower);
+			break;
+		INTAKE_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Intake Backward");
+			intakeMotor.Set(-intakePower);
+			break;
+		CLIMBER_FORWARD:
+			SmartDashboard::PutString("Test Status", "Climber Forward");
+			climberMotor.Set(climbPower);
+			break;
+		CLIMBER_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Climber Backward");
+			climberMotor.Set(-climbPower);
+			break;
+		SHOOTER_FORWARD:
+			SmartDashboard::PutString("Test Status", "Shooter Forward");
+			shooterMotor.Set(shootPower);
+			break;
+		SHOOTER_BACKWARD:
+			SmartDashboard::PutString("Test Status", "Shooter Backward");
+			shooterMotor.Set(-shootPower);
+			break;
+		START:
+			SmartDashboard::PutString("Test Status", "Start");
+		STOP:
+			SmartDashboard::PutString("Test Status", "Stop");
+		PAUSE: // stop all motors
+			SmartDashboard::PutString("Test Status", "Pause");
+			mecanumDrive.MecanumDrive_Cartesian(0, 0, 0);
+			intakeMotor.Set(0);
+			intakeMotor.Set(0);
+			climberMotor.Set(0);
+			climberMotor.Set(0);
+			shooterMotor.Set(0);
+			shooterMotor.Set(0);
+			break;
+		}
 	}
 };
 
